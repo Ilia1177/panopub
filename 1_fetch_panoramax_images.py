@@ -22,7 +22,8 @@ OSM_FEATURES = "./ads.geojson"
 OUTPUT_FOLDER = "./training_pictures"
 METADATA_CSV = "./metadata.csv"
 
-WANTED_PICTURES = 100
+NEW_PICTURES = 500
+WANTED_PICTURES = 500 #not used anymore
 # Only keep large, street-visible ad types
 KEEP_TYPES = {"billboard", "board", "totem", "column", "poster_box"}
 
@@ -180,7 +181,16 @@ def download(item):
             os.remove(tmp)
         return None
 
-
+def load_history():
+    """IDs, sign ids and per-sequence counts from previous runs."""
+    ids, sign_ids, per_seq = set(), set(), Counter()
+    if os.path.exists(METADATA_CSV):
+        with open(METADATA_CSV, newline="") as f:
+            for row in csv.DictReader(f):
+                ids.add(row["id"])
+                sign_ids.add(row["osm_id"])
+                per_seq[row["sequence"]] += 1
+    return ids, sign_ids, per_seq
 ####################################################################
 # Main
 #
@@ -189,20 +199,20 @@ def main():
 
     print("Loading OSM features...")
     signs = load_signs()
+    hist_ids, hist_signs, per_sequence = load_history()
+    signs = [s for s in signs if str(s["osm_id"]) not in hist_signs]
     random.seed(42)
-    random.shuffle(signs)  # spread over the whole area instead of one neighbourhood
-    print(f"  - {len(signs)} usable signs")
+    random.shuffle(signs)
+    print(f"  - {len(signs)} signs not used yet")
 
-    # Resume support: do not redo what is already downloaded
-    seen_ids = {os.path.splitext(n)[0] for n in os.listdir(OUTPUT_FOLDER) if n.endswith(".jpg")}
-    remaining = WANTED_PICTURES - len(seen_ids)
-    print(f"  - {len(seen_ids)} pictures already present, {max(remaining, 0)} to fetch")
-    if remaining <= 0:
-        return
+    files = {os.path.splitext(n)[0] for n in os.listdir(OUTPUT_FOLDER) if n.endswith(".jpg")}
+    seen_ids = files | hist_ids
+    remaining = NEW_PICTURES
+    print(f"  - {len(seen_ids)} pictures already known, fetching {remaining} new ones")
 
     print("Searching Panoramax...")
     selected = []
-    per_sequence = Counter()
+
     with ThreadPoolExecutor(SEARCH_WORKERS) as ex:
         for i in range(0, len(signs), BATCH_SIZE):
             if len(selected) >= remaining:
