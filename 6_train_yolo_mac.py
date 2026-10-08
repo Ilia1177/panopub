@@ -14,7 +14,8 @@ def main():
         'train': 'images/train',
         'val': 'images/val',
         'names': {
-            0: 'billboard'
+            0: 'billboard',
+            1: 'graffiti'
         }
     }
 
@@ -25,14 +26,17 @@ def main():
 
     # 3. Load the base YOLOv8n model
     print("[INFO] Loading the base YOLOv8n model...")
-    model = YOLO("yolov8n.pt")
+    model = YOLO("yolov26s.pt")
 
     # 4. Train the model on the MacBook Pro GPU (MPS)
     print("[INFO] Training the model on the MacBook Pro GPU (MPS)...")
     model.train(
         data=yaml_path,
         epochs=50,
-        imgsz=640,
+        batch=4,
+        workers=2,
+        cache=False,
+        imgsz=960,
         device="mps"  # Use "mps" for MacBook Pro GPU
     )
     print("[INFO] Training completed successfully!")

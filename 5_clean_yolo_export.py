@@ -1,4 +1,4 @@
-"""Remove images containing a selected class and compact YOLO class IDs."""
+"""Remove annotations of a selected class and compact YOLO class IDs."""
 
 import argparse
 import json
@@ -6,7 +6,11 @@ from pathlib import Path
 
 
 def clean_export(root: Path, class_name: str = "delete", apply: bool = False) -> tuple[int, int]:
-    """Validate the export before deleting pairs and rewriting metadata."""
+    """Validate the export before removing annotations and rewriting metadata.
+
+    Keep every image and label file, including labels that become empty.
+    Return the number of removed annotations and retained label files.
+    """
     classes_path = root / "classes.txt"
     notes_path = root / "notes.json"
     names = classes_path.read_text().splitlines()
@@ -30,14 +34,13 @@ def clean_export(root: Path, class_name: str = "delete", apply: bool = False) ->
     for image in images_dir.iterdir():
         if image.is_file() and not image.name.startswith("."):
             images.setdefault(image.stem, []).append(image)
-    deletions = []
+    removed_annotations = 0
     rewrites = []
     for label in sorted(labels_dir.glob("*.txt")):
         paired = images.get(label.stem, [])
         if len(paired) != 1:
             raise ValueError(f"{label}: expected exactly one matching image")
         rows = []
-        contains_removed = False
         for number, line in enumerate(label.read_text().splitlines(), 1):
             if not line.strip():
                 continue
@@ -48,20 +51,15 @@ def clean_export(root: Path, class_name: str = "delete", apply: bool = False) ->
                 raise ValueError(f"{label}:{number}: invalid class ID") from error
             if class_id not in range(len(names)) or len(fields) != 2:
                 raise ValueError(f"{label}:{number}: invalid annotation")
-            contains_removed |= class_id == removed_id
-            if class_id != removed_id:
+            if class_id == removed_id:
+                removed_annotations += 1
+            else:
                 rows.append(f"{mapping[class_id]} {fields[1]}")
-        if contains_removed:
-            deletions.append((label, paired[0]))
-        else:
-            rewrites.append((label, "\n".join(rows) + ("\n" if rows else "")))
-    print(f"Images to remove: {len(deletions)}")
+        rewrites.append((label, "\n".join(rows) + ("\n" if rows else "")))
+    print(f"Annotations to remove: {removed_annotations}")
     print(f"Label files to retain: {len(rewrites)}")
     print(f"Class mapping: {mapping}")
     if apply:
-        for label, image in deletions:
-            image.unlink()
-            label.unlink()
         for label, content in rewrites:
             label.write_text(content)
         classes_path.write_text("\n".join(name for name in names if name != class_name) + "\n")
@@ -73,7 +71,7 @@ def clean_export(root: Path, class_name: str = "delete", apply: bool = False) ->
         print("Export cleaned.")
     else:
         print("Dry run: no files modified. Add --apply to execute.")
-    return len(deletions), len(rewrites)
+    return removed_annotations, len(rewrites)
 
 
 def main() -> None:
