@@ -41,34 +41,34 @@ Outdoor Advertising (OOH - Out Of Home) represents a multi-billion euro industry
 ```mermaid
 flowchart TD
     subgraph Phase 0 & 1: Smart Geospatial Extraction
-        A["Geofabrik OSM France PBF\n(france-latest.osm.pbf)"] -->|osmium tags-filter| B["OSM Signs & Place Nodes"]
-        B -->|cKDTree 3D Density Classifier| C["Territory Classes\n(City / Town / Village / Rural)"]
-        C -->|0.1° Grid Round-Robin Spread| D["Balanced ads.geojson\n(6,000 signs)"]
-        D -->|STAC API Query\n(place_distance: 5-25m, FOV: ±20°)| E["Panoramax Search Engine"]
-        E -->|Bearing Angle Verification\n(angle_diff <= 60°)| F["Facing Candidates"]
-        F -->|Sequence Cap (<=3) & Ideal Dist (12m)| G["Anti-Saturation Filtering"]
-        G -->|Concurrent Download| H["Curated 360° Images\n+ metadata.csv"]
+        A["Geofabrik OSM France PBF<br>(france-latest.osm.pbf)"] -->|"osmium tags-filter"| B["OSM Signs & Place Nodes"]
+        B -->|"cKDTree 3D Density Classifier"| C["Territory Classes<br>(City / Town / Village / Rural)"]
+        C -->|"0.1° Grid Round-Robin Spread"| D["Balanced ads.geojson<br>(6,000 signs)"]
+        D -->|"STAC API Query<br>(place_distance: 5-25m, FOV: ±20°)"| E["Panoramax Search Engine"]
+        E -->|"Bearing Angle Verification<br>(angle_diff <= 60°)"| F["Facing Candidates"]
+        F -->|"Sequence Cap (<=3) & Ideal Dist (12m)"| G["Anti-Saturation Filtering"]
+        G -->|"Concurrent Download"| H["Curated 360° Images<br>+ metadata.csv"]
     end
 
     subgraph Phase 2: Zero-Shot Exploration & Roadblocks
-        H -->|Zero-Shot Inference\n(OWLv2 / YOLO-World)| I["Automated Pre-labels"]
-        I -->|360° Lens Warping\n+ False Positives| J{"Roadblock Identified:\nNoisy Pseudo-Labels"}
+        H -->|"Zero-Shot Inference<br>(OWLv2 / YOLO-World)"| I["Automated Pre-labels"]
+        I -->|"360° Lens Warping<br>+ False Positives"| J{"Roadblock Identified:<br>Noisy Pseudo-Labels"}
     end
 
     subgraph Phase 3: HITL Ground Truth Pivot
-        J -->|Strategic Pivot| K["Shared Label Studio Server"]
-        K -->|Team Hand-Curation & Verification| L["Pristine Ground Truth Dataset\n(~500 Verified Images)"]
+        J -->|"Strategic Pivot"| K["Shared Label Studio Server"]
+        K -->|"Team Hand-Curation & Verification"| L["Pristine Ground Truth Dataset<br>(~1000 Verified Images)"]
     end
 
     subgraph Phase 4: Expert Model Fine-Tuning
-        L -->|Automated data.yaml Split| M["train_yolo_mac.py\n(YOLOv8 Nano, MPS GPU)"]
-        M -->|50 Epochs Optimization| N["Expert Model Weights\n(models/best.pt)"]
-        N -->|Precision / Recall / mAP50 Metrics| O["Evaluation & Visualization\n(runs/detect/train/)"]
+        L -->|"Automated data.yaml Split"| M["train_yolo_mac.py<br>(YOLOv8 Nano, MPS GPU)"]
+        M -->|"50 Epochs Optimization"| N["Expert Model Weights<br>(models/best.pt)"]
+        N -->|"Precision / Recall / mAP50 Metrics"| O["Evaluation & Visualization<br>(runs/detect/train/)"]
     end
 
     subgraph Phase 5: Downstream Geolocation Roadmap
         N --> P["Inference on 360° Streams"]
-        P -->|Camera Heading + STAC Azimuth Trigonometry| Q["Real-World Ad GPS Coordinates\n(detected_ads.geojson)"]
+        P -->|"Camera Heading + STAC Azimuth Trigonometry"| Q["Real-World Ad GPS Coordinates<br>(detected_ads.geojson)"]
     end
 ```
 
