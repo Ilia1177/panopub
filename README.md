@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # panopub
 
 ## .osm.pbf file
